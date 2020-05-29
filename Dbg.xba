@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Dbg" script:language="StarBasic">&apos;	% integer
+&apos;	&amp; Long
+&apos;	! Single
+&apos;	# Double
+&apos;	@ Currency
+&apos;	$ String
+&apos;/////////////////////////////////////////////////////////////////////
+sub dbgInit()
+	dbgcol = 0
+	dbgrow = 0
+end sub
+&apos;//////////////////////////////////////////////////////////////////////
+sub dbg(o)
+	dim cell as Object, DbgSheet
+	DbgSheet = ThisComponent.Sheets(3)
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = CStr(o)
+	dbgrow = dbgrow + 1
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = &quot;--- END DEBUG ---&quot;
+end sub
+&apos;/////////////////////////////////////////////////////////////////////
+sub dbg2(o1, o2)
+	dim cell as Object, DbgSheet
+	DbgSheet = ThisComponent.Sheets(3)
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = CStr(o1)
+	dbgcol = dbgcol + 1
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = CStr(o2)
+
+	dbgcol = dbgcol - 1
+	dbgrow = dbgrow + 1
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = &quot;--- END DEBUG ---&quot;
+end sub
+&apos;/////////////////////////////////////////////////////////////////////
+sub dbg4(o1, o2, o3, o4)
+	dim cell as Object, DbgSheet
+	DbgSheet = ThisComponent.Sheets(3)
+
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = CStr(o1)
+	
+	dbgcol = dbgcol + 1
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = CStr(o2)
+	
+	dbgcol = dbgcol + 1
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = CStr(o3)
+	
+	dbgcol = dbgcol + 1
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = CStr(o4)
+	
+	dbgcol = dbgcol - 3
+	dbgrow = dbgrow + 1
+
+	cell = DbgSheet.getCellByPosition(dbgcol, dbgrow)
+	cell.String = &quot;--- END DEBUG ---&quot;
+end sub
+&apos;/////////////////////////////////////////////////////////////////////
+</script:module>

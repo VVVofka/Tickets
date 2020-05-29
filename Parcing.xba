@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parcing" script:language="StarBasic">Option Explicit
+public prevColor  as Long,	 nextColor  as Long
+public prevIPrice as Integer,nextIPrice as Integer
+public prevSeat   as Integer,nextSeat   as Integer
+&apos; ///////////////////////////////////////////////////////////////
+public const ERR_CODE = -1
+Type OutType
+	Sector as String
+	Row as Integer
+	SeatFrom as integer		&apos;	SeatTo as Integer
+	Count as Integer
+	Price as integer
+end type
+dim tout as OutType &apos; Сюда записываем данные для печати
+dim PlanSheet as Object
+&apos; ///////////////////////////////////////////////////////////////
+Public Function parceHall() as Boolean	&apos; SheetName as String
+	dim i as integer, oRange as Object
+	parceHall = False
+
+	PlanSheet = ThisComponent.Sheets(isheetPLAN)
+	LoadPrices(PlanSheet)
+	tout.Count = 0
+
+	ThisComponent.lockControllers
+	ThisComponent.enableAutomaticCalculation(false)
+
+	for i = LBound(SectorsNames) to UBound(SectorsNames)
+		tout.Sector =  Utils.Replace(SectorsNames(i),&quot;Sector&quot;,&quot;&quot;)
+		oRange = PlanSheet.getCellRangeByName(SectorsNames(i))
+		if parceSector(oRange) = False then
+			goto exitHall
+		end if
+	next i
+	parceHall = True
+exitHall:
+	ThisComponent.unLockControllers
+	ThisComponent.enableAutomaticCalculation(true)	
+end function
+&apos;///////////////////////////////////////////////////////////////////////////
+Public Function parceSector(oRange as Object) as Boolean
+dim nRowRange as integer, nColRange as integer, cell as Object
+	parceSector = False
+ 	For nRowRange = oRange.Rows.Count-1 To 0 Step -1
+ 		tout.Row = getNRow(oRange.getCellByPosition(0, nRowRange))
+ 		if tout.Row = ERR_CODE then
+ 			exit function
+ 		end if
+   		prevColor = ERR_CODE
+   		prevIPrice = ERR_CODE
+   		prevSeat = ERR_CODE
+
+		For nColRange = 0 To oRange.Columns.Count - 1
+      		cell = oRange.getCellByPosition(nColRange, nRowRange)
+      		
+      		nextColor = cell.CellBackColor
+      		if nextColor = RGB(255,255,255) then
+      			nextColor = ERR_CODE
+      		end if
+      		&apos;if nextColor &lt;&gt; prevColor then
+	      		nextIPrice = Prices.getIPrice(nextColor)
+	      	&apos;end if
+      		nextSeat = getSeat(cell)
+ 	&apos; ЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖ	
+      	&apos;	dbg4(tout.Sector, tout.Row, sColor2, nextSeat prevSeat 
+			&apos;if cell.AbsoluteName = &quot;$Plan.$AR$32&quot; then
+			&apos;if tout.Sector= &quot;6&quot; and tout.Row= 10 and prevSeat&gt;-54 and nextSeat= 83 then
+			&apos;	beep
+			&apos;endif
+			if nColRange = (oRange.Columns.Count - 1) then	&apos; End of Range
+			&apos; ~~~~~~~~~~~~~
+				if (prevSeat = ERR_CODE Or prevIPrice = ERR_CODE) And _
+				 (nextIPrice &lt;&gt; ERR_CODE And nextSeat &lt;&gt; ERR_CODE) then	&apos;Одно место (по цене) в конце диапазона например:(последнее место в ряду имеет свою цену)
+					prevIPrice = nextIPrice
+					saveStart()
+					if not saveEnd() then
+						errMsg(1005)
+						exit function
+					end if
+				else							&apos; Не одно место (по цене) в конце диапазона
+					if nextIPrice &lt;&gt; ERR_CODE And nextSeat &lt;&gt; ERR_CODE then		&apos; If last seat and last range pos are match
+						tout.Count = tout.Count + 1
+						if not saveEnd() then
+							errMsg(1001)
+							exit function
+						end if
+					else
+						if ch(true, true, false, false) then
+							if not saveEnd() then
+								errMsg(1002)
+								exit function
+							end if
+						end if
+					end if
+				end if	&apos; Единственное ли место по цене в конце ряда
+			else
+	      		if IsCont() then
+	      			saveCont()
+	      		else 
+	      			if IsEnd() then
+						if not saveEnd() then
+							errMsg(1003)
+							exit function
+						end if
+			   		else 
+	      				if IsStart() then
+	      					saveStart()
+	      				else 
+	      					if IsEndStart() then
+	      						if not saveEnd() then
+									errMsg(1004)
+									exit function
+	      						end if
+				      			saveStart()
+	      					end if
+	      				end if
+	      			end if
+	      		end if
+	      		if(tout.Count &gt; 0) then
+		      		prevColor = nextColor
+		      		prevIPrice = nextIPrice
+		      		prevSeat = nextSeat
+		      	else
+		      		prevColor = ERR_CODE
+		      		prevIPrice = ERR_CODE
+		      		prevSeat = ERR_CODE
+		      	end if
+	      	end if
+	    Next nColRange
+	Next nRowRange
+	parceSector = True
+End Function
+&apos; ///////////////////////////////////////////////////////////////
+Public Function getSeat(Obj as Object) as Integer
+	dim s as string 
+	getSeat = ERR_CODE
+	s = Obj.String
+	if IsNumeric(s) = False then
+		exit function
+	end if
+	getSeat = CInt(s)
+End Function
+&apos;///////////////////////////////////////////////////////////////
+Public Function getNRow(oRange as Object) as integer
+dim RowIndex as integer
+dim cell0 as Object
+dim sRow as string
+&apos;On Local Error Goto ErrorgetNRow:
+	getNRow = ERR_CODE
+	RowIndex = oRange.RangeAddress.StartRow
+	cell0 =  PlanSheet.getCellByPosition(0, RowIndex)
+	sRow = cell0.String
+	sRow = Utils.Replace(LCase(sRow),&quot;ряд&quot;,&quot;&quot;)
+	sRow = Trim(sRow)
+	getNRow = CInt(sRow)
+	exit function
+ErrorgetNRow:
+&apos;On Local Error Goto 0
+end function
+&apos;///////////////////////////////////////////////////////////////
+Public sub saveStart
+	tout.Count = 1
+	tout.SeatFrom = nextSeat
+	if nextIPrice &gt; UBound(Prices.arPrice) then
+		stop
+	end if
+	tout.Price = Prices.arPrice(nextIPrice)
+end sub
+&apos;///////////////////////////////////////////////////////////////
+Public sub saveCont
+	tout.Count = tout.Count + 1
+end sub
+&apos;///////////////////////////////////////////////////////////////
+Public function saveEnd() as boolean
+On Local Error Goto ERRsaveEnd:
+	if tout.Count &gt; 0 then
+	Prices.arCount(prevIPrice) = Prices.arCount(prevIPrice) + tout.Count
+	saveEnd = Saver.SaveLine(tout)
+	else	
+		saveEnd = True
+	end if
+	tout.Count = 0
+	tout.SeatFrom = ERR_CODE
+	tout.Price = ERR_CODE
+	exit function
+ERRsaveEnd:
+	dbg4 	Ubound(Prices.arCount), nextIPrice, tout.Count, &quot;&quot;
+	saveEnd = False
+end function
+&apos;///////////////////////////////////////////////////////////////
+private function isEnd() as Boolean
+	dim a as boolean, b as boolean, c as boolean, d as boolean
+	a = ch (true, true, false, false)
+	b = ch (true, true, false, true)
+	c = chd(true, true, true,  false, false)
+	d = chd(true, true, true,  false, true)
+	isEnd =  a or b or c or d
+end function
+&apos;///////////////////////////////////////////////////////////////
+private function isStart() as Boolean
+	dim a as boolean, b as boolean, c as boolean, d as boolean
+	a = ch (false, false, true, true)
+	b = ch (false, true,  true, true)
+	c = chd(true,  false, true, true, false)
+	d = chd(true,  false, true, true, true)
+	isStart =  a or b or c or d
+end function
+&apos;///////////////////////////////////////////////////////////////
+private function isCont() as Boolean
+	isCont = chd(true, true, true, true, false)
+end function
+&apos;///////////////////////////////////////////////////////////////
+private function isEndStart() as Boolean
+	isEndStart = chd(true,  true, true, true, true)
+end function
+&apos;///////////////////////////////////////////////////////////////
+private function ch(prev_price as boolean, prev_seat as boolean, next_price as boolean, next_seat as boolean) as boolean
+dim bPrevPrice as boolean, bPrevSeat as boolean, bNextPrice as boolean, bNextSeat as boolean, bExistDif as boolean
+	bPrevPrice = ((prevIPrice &lt;&gt; ERR_CODE) = prev_price)
+	bPrevSeat =  ((prevSeat  &lt;&gt;  ERR_CODE) = prev_seat)
+	bNextPrice = ((nextIPrice &lt;&gt; ERR_CODE) = next_price)
+	bNextSeat =  ((nextSeat  &lt;&gt;  ERR_CODE) = next_seat)
+	ch = bPrevPrice and bPrevSeat and bNextPrice and bNextSeat
+end function
+&apos;---------------------------------------------------------------
+private function chd(prev_price as boolean, prev_seat as boolean, next_price as boolean, next_seat as boolean, dif_exist_seat as boolean) as boolean
+dim bExistDif as boolean, bPrevSeat as boolean, bNextSeat as boolean
+	if dif_exist_seat then
+		bExistDif = (prevIPrice &lt;&gt; ERR_CODE) and (nextIPrice &lt;&gt; ERR_CODE) and (prevIPrice &lt;&gt; nextIPrice)
+	else
+		bExistDif = (prevIPrice &lt;&gt; ERR_CODE) and (nextIPrice &lt;&gt; ERR_CODE) and (prevIPrice = nextIPrice)
+	end if
+	bPrevSeat =  ((prevSeat  &lt;&gt;  ERR_CODE) = prev_seat)
+	bNextSeat =  ((nextSeat  &lt;&gt;  ERR_CODE) = next_seat)
+	chd = bExistDif and bPrevSeat and bNextSeat
+end function
+&apos;///////////////////////////////////////////////////////////////
+sub errMsg(code%)
+if UBound(Prices.arPrice) &lt;= prevIPrice then
+ Print &quot;Error in Parcing #&quot;;code, _
+ &quot; Sector:&quot;;tout.Sector,&quot; Row:&quot;;tout.Row,&quot; SeatFrom:&quot;;tout.SeatFrom,&quot; Seat:&quot;;nextSeat,&quot; Price:&quot;;tout.Price,_
+ &quot; Index price:&quot;;prevIPrice,&quot; Price:&quot;;Prices.arPrice(prevIPrice),&quot; Count:&quot;;Prices.arCount(prevIPrice)
+else
+ Print &quot;Error in Parcing #&quot;;code, _
+ &quot; Sector:&quot;;tout.Sector,&quot; Row:&quot;;tout.Row,&quot; SeatFrom:&quot;;_
+ tout.SeatFrom,&quot; Seat:&quot;;nextSeat,&quot; Price:&quot;;tout.Price,&quot; Index prev price:&quot;;prevIPrice,
+end if
+end sub
+&apos;///////////////////////////////////////////////////////////////
+
+&apos;///////////////////////////////////////////////////////////////
+
+&apos;///////////////////////////////////////////////////////////////
+</script:module>

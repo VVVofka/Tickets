@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE library:library PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "library.dtd">
+<library:library xmlns:library="http://openoffice.org/2000/library" library:name="Tickets" library:readonly="false" library:passwordprotected="false">
+ <library:element library:name="Prices"/>
+ <library:element library:name="Sectors"/>
+ <library:element library:name="Parcing"/>
+ <library:element library:name="Saver"/>
+ <library:element library:name="Utils"/>
+ <library:element library:name="Dbg"/>
+ <library:element library:name="AllSheets"/>
+ <library:element library:name="Result"/>
+ <library:element library:name="Check"/>
+</library:library>

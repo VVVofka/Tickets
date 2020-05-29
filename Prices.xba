@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Prices" script:language="StarBasic">Option Explicit
+dim arColor() as Long, arPrice() as Integer, arCount() as Integer
+dim tmp
+&apos;////////////////////////////////////////////////////////////////////////////////////////////
+function LoadPrices (mySheet as Object) as Boolean
+	dim cnt as integer
+	Dim oRange        &apos;Используемый диапазон ячеек
+	dim nRow as integer
+	dim bColor as Boolean, bPrice as Boolean
+	dim oColor as Object, oPrice as Object
+	LoadPrices = False
+	oRange = mySheet.getCellRangeByName(&quot;Legend&quot;) &apos;DY3:DZ14
+	&apos; Подсчёт размерности будущего Ar[]
+	For nRow = 0 To oRange.Rows.Count - 1
+		oColor = oRange.getCellByPosition(0, nRow)
+		oPrice = oRange.getCellByPosition(1, nRow)
+		bColor = CheckColor(oColor)
+		bPrice = CheckPrice(oPrice)
+   		if bColor And bPrice then 
+   			cnt = cnt + 1
+		end if
+	Next
+	if cnt &gt; 0 then
+		ReDim arColor(cnt-1) 
+		ReDim arPrice(cnt-1) 	
+		ReDim arCount(cnt-1) 
+	end if
+	cnt = 0
+	For nRow = 0 To oRange.Rows.Count - 1
+		oColor = oRange.getCellByPosition(0, nRow)
+		oPrice = oRange.getCellByPosition(1, nRow)
+		bColor = CheckColor(oColor)
+		bPrice = CheckPrice(oPrice)
+   		if bColor And bPrice then 
+			arColor(cnt) = oColor.CellBackColor 
+			arPrice(cnt) = CInt(Trim(oPrice.String))
+			cnt = cnt + 1
+		end if
+	Next nRow
+	
+	&apos; Check for 0
+	cnt = getIPrice(RGB(255, 255, 255))
+	if cnt &lt;&gt; ERR_CODE then
+		LoadPrices = (arPrice(cnt) &lt;&gt; 0)
+		if LoadPrices = False then
+			MsgBox &quot;Нулевая цена не должна иметь самый светлый цвет &quot;
+		end if
+	end if
+end function
+&apos; ////////////////////////////////////////////////////////////////
+public function getIPrice(color as long) as integer
+	if color &lt;= 0 then
+		getIPrice = ERR_CODE
+		exit function
+	end if
+	dim i as integer, min as double, d as double, nmin as integer
+	i = getIPriceExactly(color)
+	if i &lt;&gt; ERR_CODE then
+		getIPrice = i
+	else
+		min = getDifColor(color, arColor(0))
+		nmin = 0
+		if(UBound(ArColor) &gt; 0) then
+			for i=1 to UBound(ArColor)	
+				d = Utils.getDifColor(color, arColor(i))
+				if(d &lt; min) then
+					min = d
+					nmin = i
+				endif
+			next i
+		end if
+		getIPrice = nmin
+	end if	&apos;if i &lt;&gt; ERR_CODE 
+end function
+&apos; ////////////////////////////////////////////////////////////////
+private function getIPriceExactly(color as long) as integer
+	dim i%
+	for i=0 to UBound(ArColor)	
+		if arColor(i) = color then
+			getIPriceExactly = i
+			exit function
+		end if
+	next i
+	getIPriceExactly = ERR_CODE
+end function
+&apos; ////////////////////////////////////////////////////////////////
+private function CheckColor(cell as Object) as Boolean
+	CheckColor = (cell.CellBackColor &gt;= 0 And cell.CellBackColor &lt;= RGB(255, 255, 255))
+end function
+&apos; ////////////////////////////////////////////////////////////////
+private function CheckPrice(cell as Object) as Boolean
+dim s as string
+	CheckPrice = False
+	s = Trim(cell.String)
+	if IsNumeric(s) then
+		CheckPrice = (CInt(s) &gt;= 0)
+	end if
+end function
+&apos; ////////////////////////////////////////////////////////////////
+public function getColorByPrice(price) as Long
+	dim i%
+	for i=0 to UBound(ArColor)	
+		if arPrice(i) = price then
+			getColorByPrice = arColor(i)
+			exit function
+		end if
+	next i
+	getIPriceExactly = ERR_CODE
+end function
+&apos; ////////////////////////////////////////////////////////////////
+&apos; ////////////////////////////////////////////////////////////////
+
+</script:module>

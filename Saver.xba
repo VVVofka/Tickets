@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Saver" script:language="StarBasic">Option Explicit
+dim dbgcol as integer, dbgrow as integer
+
+private r as integer, c as integer	&apos; coordinates of cell
+private startCell	&apos; StartCell
+private freeRows%
+const stepFreeRows = 512
+private ReportSheet
+&apos;//////////////////////////////////////////////////////////////////////////
+public function Init()
+	dim cell as Object
+	startCell = getStartCell()
+&apos;	ReportSheet = startCell.Spreadsheet  &apos; in  getStartCell()
+	r = startCell.CellAddress.Row
+	c = startCell.CellAddress.Column
+	
+	cell = ReportSheet.getCellByPosition(7, 0)
+	cell.String = &quot;Обработка...&quot;
+	
+	freeRows = stepFreeRows
+	ReportSheet.Rows.insertByIndex(r+1, freeRows)
+end function
+&apos;//////////////////////////////////////////////////////////////////////////
+public function SaveLine(tout as OutType) as Boolean
+	dim cell as Object
+
+	&apos;SaveLine = -1
+	&apos;exit function
+	SaveLine = False
+	&apos;InsertLineAfter
+	&apos;ReportSheet.Rows.insertByIndex(r+1, 1)	&apos; 	insertByIndex(index, count)
+	if tout.Price &gt;= 0 then	&apos;	Сектор	
+		if(freeRows &lt;= 0) then
+			freeRows = stepFreeRows
+			ReportSheet.Rows.insertByIndex(r+1, freeRows)
+		endif			
+		freeRows = freeRows - 1
+		cell = ReportSheet.getCellByPosition(c, r)
+		cell.String = tout.Sector
+
+		c = c + 1	&apos;	Ряд
+		cell = ReportSheet.getCellByPosition(c, r)
+		cell.String = tout.Row
+
+		c = c + 1	&apos;	Место с
+		cell = ReportSheet.getCellByPosition(c, r)
+		cell.Value = tout.SeatFrom
+
+		c = c + 1	&apos; 	Место по
+		cell = ReportSheet.getCellByPosition(c, r)
+		cell.Value = tout.SeatFrom + tout.Count - 1
+
+		c = c + 1
+		cell = ReportSheet.getCellByPosition(c, r)
+		cell.Formula = crf1 &apos; tout.SeatTo - tout.SeatFrom + 1
+
+		c = c + 1
+		cell = ReportSheet.getCellByPosition(c, r)
+		cell.Value = tout.Price
+
+		c = c + 1
+		cell = ReportSheet.getCellByPosition(c, r)
+		cell.Formula = crf2
+		
+		c = c - 6
+		r = r + 1
+	end if
+SaveLine = True
+end function
+&apos;//////////////////////////////////////////////////////////////////////////
+sub saveSummary
+	dim rstart%, rend%, cell, cnttick, sumtick
+	cell = ReportSheet.getCellByPosition(7, 0)
+	cell.String = &quot;&quot;
+
+	cell = StartCell
+	rstart = cell.RangeAddress.StartRow + 1
+		
+	cell = ReportSheet.getCellByPosition(0, r)
+	cell.CharWeight = com.sun.star.awt.FontWeight.BOLD
+	cell.String = &quot;Итого&quot;
+
+	rend = r
+	cell = ReportSheet.getCellByPosition(4, r)
+	cell.CharWeight = 150
+	cell.Formula = &quot;=SUM(E&quot; + rstart + &quot;:E&quot; + rend + &quot;)&quot;
+	cnttick = cell.Value
+
+	cell = ReportSheet.getCellByPosition(6, r)
+	cell.CharWeight = 150
+	cell.Formula = &quot;=SUM(G&quot; + rstart + &quot;:G&quot; + rend + &quot;)&quot;
+	sumtick = cell.Value
+
+	r = r + 1
+	if freeRows &gt; 0 then
+		ReportSheet.Rows.removeByIndex(r, freeRows)
+	end if
+&apos;exit sub	
+	dim s$, ssum$
+	r = r + 1
+	cell = ReportSheet.getCellByPosition(0, r)
+	s = cell.String
+	ssum = Sumpa(sumtick)
+	s = Utils.Replace(s, &quot;{cnt}&quot;, cnttick)
+	s = Utils.Replace(s, &quot;{sum}&quot;, sumtick)
+	s = Utils.Replace(s, &quot;{sums}&quot;, ssum)
+	cell.String  = s
+end sub
+&apos;//////////////////////////////////////////////////////////////////////////
+function crf1() as string
+	dim a,b, s as string
+	a = ReportSheet.getCellByPosition(c-2, r)
+	b = ReportSheet.getCellByPosition(c-1, r)
+	s = &quot;=&quot; + b.AbsoluteName + &quot;-&quot; + a.AbsoluteName + &quot;+1&quot;
+	s = Utils.Replace(s, &quot;$&quot; + ReportSheet.Name + &quot;.$&quot;, &quot;&quot;)
+	crf1 = Utils.Replace(s, &quot;$&quot;, &quot;&quot;)
+end function
+&apos;////////////////////////////////////////////////////////////////////
+function crf2() as string
+dim a,b, s as string
+a = ReportSheet.getCellByPosition(c-2, r)
+b = ReportSheet.getCellByPosition(c-1, r)
+s = &quot;=&quot; + b.AbsoluteName + &quot;*&quot; + a.AbsoluteName
+s = Utils.Replace(s, &quot;$&quot; + ReportSheet.Name + &quot;.$&quot;, &quot;&quot;)
+crf2 = Utils.Replace(s, &quot;$&quot;, &quot;&quot;)
+end function
+&apos;////////////////////////////////////////////////////////////////////
+sub removeLastLine()
+	ReportSheet.Rows.removeByIndex(r, 1)
+end sub
+&apos;////////////////////////////////////////////////////////////////////
+sub InsertLineAfter
+on local error goto ErrInsert
+	dim document   as object
+	dim dispatcher as object
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+
+	dim args1(0) as new com.sun.star.beans.PropertyValue
+	dim s$, rs$
+	rs = r + 2	&apos; +1 - Base 0; +1 - NextLine
+&apos;	rs = 9
+	s = &quot;$&quot; + ThisComponent.Sheets(2).Name + &quot;.$A$&quot;+ rs + &quot;:$G$&quot; + rs
+	args1(0).Name = &quot;ToPoint&quot;
+	args1(0).Value = s	&apos;&quot;$A$9:$G$9&quot;
+	dispatcher.executeDispatch(document, &quot;.uno:GoToCell&quot;, &quot;&quot;, 0, args1())
+
+	dim args2(0) as new com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;Flags&quot;
+	args2(0).Value = &quot;V&quot;
+	dispatcher.executeDispatch(document, &quot;.uno:InsertCell&quot;, &quot;&quot;, 0, args2())
+ErrInsert:
+end sub
+&apos;/////////////////////////////////////////////////////////////////////////
+function getStartCell () as Object
+	dim sheet, cell, r%, c%
+	sheet = ThisComponent.Sheets(isheetMAKET)
+	cell = sheet.getCellRangeByName(&quot;StartPrint&quot;)
+	c = cell.RangeAddress.StartColumn
+	r = cell.RangeAddress.StartRow
+	
+	ReportSheet = ThisComponent.Sheets(isheetREPORT)
+	getStartCell = ReportSheet.getCellByPosition(c, r)
+end function
+&apos;/////////////////////////////////////////////////////////////////////////
+
+function Checker()
+	ReportSheet = ThisComponent.Sheets(isheetREPORT)
+	dim cell, oController
+	ThisComponent.unLockControllers
+	ThisComponent.enableAutomaticCalculation(true)	
+	cell = ReportSheet.getCellByPosition(7, 0)
+	cell.String = &quot;Обработка...&quot;
+
+	oController = ThisComponent.getCurrentController()
+	cell = ReportSheet.getCellByPosition(0, 0)
+	oController.select(cell)
+	ThisComponent.enableAutomaticCalculation(false)
+	ThisComponent.lockControllers
+
+	dim ret
+	ret = Checker1()
+	
+	ThisComponent.unLockControllers
+	ThisComponent.enableAutomaticCalculation(true)	
+
+	cell = ReportSheet.getCellByPosition(7, 0)
+	cell.String = &quot;&quot;
+
+	Check.drawSectorBorders
+	SelectList isheetCHECK
+	exit function
+	
+	if isnull(ret) then 
+		Checker = null
+		exit function
+	else
+		oController.select(ret)
+	end if
+end function
+&apos;///////////////////////////////////////////////////////////////////////// 
+function Checker1()
+on error goto ErrChecker
+	InitSectorsNames
+	CheckInit
+	LoadPrices(ThisComponent.Sheets(isheetPLAN))
+
+	dim r%, rstart%, cell
+	cell = ReportSheet.getCellRangeByName(&quot;StartPrint&quot;)
+	rstart = cell.RangeAddress.StartRow
+	
+	for r = rstart to 1000
+		dim sector$, row%, from%, cnt%, price
+		cell = ReportSheet.getCellByPosition(0, r)
+		sector = cell.String
+		if sector = &quot;Итого&quot; then 
+			Checker1 = cell
+			exit function
+		end if
+		
+		cell = ReportSheet.getCellByPosition(1, r)
+		row = cell.String
+		
+		cell = ReportSheet.getCellByPosition(2, r)
+		from = cell.String
+		
+		cell = ReportSheet.getCellByPosition(4, r)
+		cnt = cell.Value
+		
+		cell = ReportSheet.getCellByPosition(5, r)
+		price = cell.Value
+
+		dim rangeErr
+		rangeErr = ReportSheet.getCellRangeByPosition(0, r, 6, r)
+		if Check.getRangeByPrice(sector, row, from, cnt, price)	then
+			rangeErr.CellBackColor = ERR_CODE
+		else
+			rangeErr.CellBackColor = RGB (255, 255, 0)
+			Checker1 = cell
+			exit function
+		end if
+		
+	next r
+	Checker1 = cell
+	exit function
+ErrChecker:
+	Print &quot;Код:&quot;+Err+&quot; Строка кода:&quot;+ Erl+CHR$(10)+&quot; &apos;&quot;+Error()+&quot;&apos;&quot;+CHR$(10)+&quot;R=&quot;+r
+	Checker1 = null
+	exit function
+end function
+&apos;/////////////////////////////////////////////////////////////////////////
+
+</script:module>

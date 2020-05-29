@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Utils" script:language="StarBasic">Option explicit
+
+Function GetRowIndex(oSheet as Object, RowName as String)
+Dim oRange as Object
+	oRange = oSheet.GetCellRangeByName(RowName)
+	GetRowIndex = oRange.RangeAddress.StartRow
+End Function
+
+
+Function GetColumnIndex(oSheet as Object, ColName as String)
+Dim oRange as Object
+	oRange = oSheet.GetCellRangeByName(ColName)
+	GetColumnIndex = oRange.RangeAddress.StartColumn
+End Function
+
+Function ReplaceString(ByVal Bigstring, NewReplace, OldReplace as String)  as String
+	ReplaceString=join(split(BigString,OldReplace),NewReplace)
+End Function
+&apos; ////////////////////////////////////////////////////////////////////////////
+Function Replace(Source As String, Search As String, NewPart As String)
+  Dim Result As String
+  Dim StartPos As Long
+  Dim CurrentPos As Long
+ 
+  Result = &quot;&quot;
+  StartPos = 1
+  CurrentPos = 1
+ 
+  If Search = &quot;&quot; Then
+    Result = Source
+  Else 
+    Do While CurrentPos &lt;&gt; 0
+      CurrentPos = InStr(StartPos, Source, Search)
+      If CurrentPos &lt;&gt; 0 Then
+        Result = Result + Mid(Source, StartPos, _
+        CurrentPos - StartPos)
+        Result = Result + NewPart
+        StartPos = CurrentPos + Len(Search)
+      Else
+        Result = Result + Mid(Source, StartPos, Len(Source))
+      End If                &apos; Position &lt;&gt; 0
+    Loop 
+  End If 
+ 
+  Replace = Result
+End Function
+&apos;//////////////////////////////////////////////////////////////////////////////////
+function getDifColor(color_1 as Long, color_2 as Long) as double
+dim r1 as long, r2 as long, g1 as long, g2 as long, b1 as long, b2 as long, x1 as long, x2 as long
+	x1 = color_1 \ 256
+	x2 = color_2 \ 256
+	r1 = x1 \ 256
+	r2 = x2 \ 256
+	g1 = x1 - (r1 * 256)
+	g2 = x2 - (r2 * 256)
+	b1 = color_1 - x1 * 256
+	b2 = color_2 - x2 * 256
+	getDifColor = (CDbl(r1-r2)*(r1-r2)*(r1+r2) + CDbl(g1-g2)*(g1-g2)*(g1+g2) + CDbl(b1-b2)*(b1-b2)*(b1+b2))&apos; / (256+r1+r2+g1+g2+b1+b2)
+end function
+&apos;/////////////////////////////////////////////////////////////////////////////////////////
+sub sdaddfa()
+
+	Color2Str(rgb(7, 3, 1))
+end sub
+&apos;//////////////////////////////////////////////////////////////////////////////////////////
+function Color2Str(inColor as long) as string
+dim r as long, g as long, b as long, x1&amp;, x2&amp;
+	x1 = inColor \ 256
+	r = x1 \ 256
+	g = x1 - (r * 256)
+	b = inColor - x1 * 256
+	Color2Str = &quot;R:&quot; + r + &quot; G:&quot; + g + &quot; B:&quot; + b
+end function
+&apos;//////////////////////////////////////////////////////////////////////////////////////////
+sub ssss
+	Print Sumpa(71234567890)
+end sub
+&apos;//////////////////////////////////////////////////////////////////////////////////////
+Public Function Sumpa(x As double) As String
+If x &gt; 999999999999.99 Then
+	Sumpa = &quot;Аргумент больше 999 999 999 999.99!&quot;
+ElseIf x &lt; 0 Then
+	Sumpa = &quot;Аргумент отрицательный!&quot;
+Else
+&apos;	x = FormatNumber(x, 2)
+	&apos;Dim b As Byte, b1 As Byte, b2 As Byte, kop As String
+	&apos;b = (x - Fix(x)) * 100
+	&apos;b2 = b \ 10
+	&apos;b1 = b Mod 10
+	&apos;If b2 &lt;&gt; 1 And b1 = 1 Then
+	&apos;	kop = &quot; копейка&quot;
+	&apos;ElseIf b2 &lt;&gt; 1 And b1 &gt; 1 And b1 &lt; 5 Then
+&apos;		kop = &quot; копейки&quot;
+	&apos;Else
+&apos;		kop = &quot; копеек&quot;
+&apos;	End If
+&apos;	kop = b2 &amp; b1 &amp; kop
+	Dim y(1 To 4) As Integer, i1 As Byte
+	For i1 = 1 To 4
+		x = Fix(x) / 1000
+		y(i1) = (x - Fix(x)) * 1000
+	Next
+	Dim Text(1 To 4) As String, i2 As Byte, y1 As Byte, y2 As Byte, _
+	y3 As Byte, Text0 As String, Text1 As String, Text2 As String, Text3 As String, _
+	Text4 As String
+	For i2 = 1 To 4
+		y1 = y(i2) Mod 10
+		y2 = (y(i2) - y1) / 10 Mod 10
+		y3 = y(i2) \ 100
+		Text1 = Choose(y3 + 1, &quot;&quot;, &quot;сто &quot;, &quot;двести &quot;, &quot;триста &quot;, &quot;четыреста &quot;, _
+		&quot;пятьсот &quot;, &quot;шестьсот &quot;, &quot;семьсот &quot;, &quot;восемьсот &quot;, &quot;девятьсот &quot;)
+		Text2 = Choose(y2 + 1, &quot;&quot;, &quot;&quot;, &quot;двадцать &quot;, &quot;тридцать &quot;, &quot;сорок &quot;, _
+		&quot;пятьдесят &quot;, &quot;шестьдесят &quot;, &quot;семьдесят &quot;, &quot;восемьдесят &quot;, &quot;девяносто &quot;)
+		If y2 = 1 Then
+			Text3 = Choose(y1 + 1, &quot;десять &quot;, &quot;одиннадцать &quot;, &quot;двенадцать &quot;, _
+			&quot;тринадцать &quot;, &quot;четырнадцать &quot;, &quot;пятнадцать &quot;, &quot;шестнадцать &quot;, _
+			&quot;семнадцать &quot;, &quot;восемнадцать &quot;, &quot;девятнадцать &quot;)
+		ElseIf y2 &lt;&gt; 1 And i2 = 2 Then
+			Text3 = Choose(y1 + 1, &quot;&quot;, &quot;одна &quot;, &quot;две &quot;, &quot;три &quot;, &quot;четыре &quot;, &quot;пять &quot;, _
+			&quot;шесть &quot;, &quot;семь &quot;, &quot;восемь &quot;, &quot;девять &quot;)
+		Else
+			Text3 = Choose(y1 + 1, &quot;&quot;, &quot;один &quot;, &quot;два &quot;, &quot;три &quot;, &quot;четыре &quot;, &quot;пять &quot;, _
+			&quot;шесть &quot;, &quot;семь &quot;, &quot;восемь &quot;, &quot;девять &quot;)
+		End If
+		If y2 &lt;&gt; 1 And y1 = 1 Then
+			Text4 = Choose(i2, &quot;рубль &quot;, &quot;тысяча &quot;, &quot;миллион &quot;, &quot;миллиард &quot;)
+		ElseIf y2 &lt;&gt; 1 And y1 &gt; 1 And y1 &lt; 5 Then
+			Text4 = Choose(i2, &quot;рубля &quot;, &quot;тысячи &quot;, &quot;миллиона &quot;, &quot;миллиарда &quot;)
+		ElseIf y1 = 0 And y2 = 0 And y3 = 0 Then
+			Text4 = Choose(i2, &quot;рублей &quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;)
+		Else
+			Text4 = Choose(i2, &quot;рублей &quot;, &quot;тысяч &quot;, &quot;миллионов &quot;, &quot;миллиардов &quot;)
+		End If
+		Text(i2) = Text1 &amp; Text2 &amp; Text3 &amp; Text4
+	Next
+	If y(1) + y(2) + y(3) + y(4) = 0 Then
+		Text0 = &quot;ноль рублей &quot;&apos; &amp; kop
+	Else
+		Text0 = Text(4) &amp; Text(3) &amp; Text(2) &amp; Text(1)&apos; &amp; kop
+	End If
+	Sumpa = Text0 &apos; Replace(Text0, Left(Text0, 1), UCase(Left(Text0, 1)), 1, 1)
+End If
+End Function
+&apos;///////////////////////////////////////////////////////////////////////////
+
+
+sub copyp
+rem ----------------------------------------------------------------------
+rem define variables
+dim document   as object
+dim dispatcher as object
+rem ----------------------------------------------------------------------
+rem get access to the document
+document   = ThisComponent.CurrentController.Frame
+dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+
+rem ----------------------------------------------------------------------
+dim args1(0) as new com.sun.star.beans.PropertyValue
+args1(0).Name = &quot;ToPoint&quot;
+args1(0).Value = &quot;$A$31:$G$36&quot;
+
+dispatcher.executeDispatch(document, &quot;.uno:GoToCell&quot;, &quot;&quot;, 0, args1())
+
+rem ----------------------------------------------------------------------
+dispatcher.executeDispatch(document, &quot;.uno:Copy&quot;, &quot;&quot;, 0, Array())
+
+rem ----------------------------------------------------------------------
+dim args3(0) as new com.sun.star.beans.PropertyValue
+args3(0).Name = &quot;ToPoint&quot;
+args3(0).Value = &quot;$A$39&quot;
+
+dispatcher.executeDispatch(document, &quot;.uno:GoToCellcell&quot;, &quot;&quot;, 0, args3())
+
+rem ----------------------------------------------------------------------
+dim args4(5) as new com.sun.star.beans.PropertyValue
+args4(0).Name = &quot;Flags&quot;
+args4(0).Value = &quot;A&quot;
+args4(1).Name = &quot;FormulaCommand&quot;
+args4(1).Value = 0
+args4(2).Name = &quot;SkipEmptyCells&quot;
+args4(2).Value = false
+args4(3).Name = &quot;Transpose&quot;
+args4(3).Value = false
+args4(4).Name = &quot;AsLink&quot;
+args4(4).Value = false
+args4(5).Name = &quot;MoveMode&quot;
+args4(5).Value = 0
+
+dispatcher.executeDispatch(document, &quot;.uno:InsertContents&quot;, &quot;&quot;, 0, args4())
+
+
+end sub
+</script:module>

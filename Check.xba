@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Check" script:language="StarBasic">Option Explicit
+dim CheckSheet as Object
+
+Sub CheckInit
+	dim n%, s$, range, sheets, rngout, cell, r%, c%
+	sheets = ThisComponent.Sheets
+	if sheets.hasByName(&quot;Проверка&quot;) then
+		sheets.removeByName(&quot;Проверка&quot;)
+	end if
+	PlanSheet = sheets(isheetPLAN)
+	sheets.copyByName(sheets(isheetPLAN).Name, &quot;Проверка&quot;, isheetCHECK)
+	CheckSheet = ThisComponent.Sheets(isheetCHECK)
+
+	InitSectorsNames
+	for n=LBound(Sectors.SectorsNames) to UBound(Sectors.SectorsNames)
+		s = Sectors.SectorsNames(n)
+		range = PlanSheet.getCellRangeByName(s)
+		s = range.AbsoluteName
+		s = Utils.Replace(s, sheets(0).Name, &quot;Проверка&quot;)
+		rngout =  CheckSheet.getCellRangeByName(s)
+		rngout.CellBackColor = -1
+	next n
+End Sub
+&apos;//////////////////////////////////////////////////////////////////
+function getRangeByPrice(sector$, row%, from%, cnt%, price) as Boolean
+	if (not IsSectorShort(sector)) _
+		or row &lt;= 0 _
+		or from &lt;= 0 _
+		or cnt &lt;= 0 	then exit function
+	dim rng, sheets, ir%, rowsect%, rngr, cellFind as Boolean
+	sheets = ThisComponent.Sheets
+	rng = CheckSheet.getCellRangeByName(Sectors.preSector + sector)
+	for ir = 0 to rng.Rows.Count-1
+		rngr = rng.getCellRangeByPosition(0, ir, rng.Columns.Count-1, ir)	&apos; rng.Columns.Count-1
+		rowsect = getNRowCheck(rngr)
+		if rowsect = row then
+			dim c%, cell
+			for c=0 to rngr.Columns.Count-1
+				cell = rngr.getCellByPosition(c, 0)
+				if from = cell.Value then
+					dim rngcolor, color&amp;
+					rngcolor = rngr.getCellRangeByPosition(c, 0, c + cnt - 1, 0)
+					color = getColorByPrice(price)
+					if cell.CellBackColor &gt;= 0 then exit function
+					rngcolor.CellBackColor = color
+					getRangeByPrice = True
+					exit function
+				end if
+			next c
+		end if
+	next ir
+end function
+&apos;//////////////////////////////////////////////////////////////////////////////////////
+Public Function getNRowCheck(oRange as Object) as integer
+dim RowIndex as integer, cell0 as Object, sRow as string
+	getNRowCheck = ERR_CODE
+	RowIndex = oRange.RangeAddress.StartRow
+	cell0 =  CheckSheet.getCellByPosition(0, RowIndex)
+	sRow = cell0.String
+	sRow = Utils.Replace(LCase(sRow),&quot;ряд&quot;,&quot;&quot;)
+	sRow = Trim(sRow)
+	if IsNumeric(sRow) then
+		getNRowCheck = CInt(sRow)
+	else
+		getNRowCheck = ERR_CODE
+	end if
+end function
+&apos;///////////////////////////////////////////////////////////////
+Sub drawSectorBorders
+Dim range, s$, n%
+	InitSectorsNames
+	CheckSheet = ThisComponent.Sheets(isheetCHECK)
+	for n=LBound(Sectors.SectorsNames) to UBound(Sectors.SectorsNames)
+		s = Sectors.SectorsNames(n)
+		range = CheckSheet.getCellRangeByName(s)
+		setBorders (range, RGB(255, 220, 50))
+	next n
+	range = CheckSheet.getCellRangeByName(&quot;Legend&quot;)
+	setBorders (range, RGB(255, 120, 225))
+end Sub
+&apos;///////////////////////////////////////////////////////////////
+Sub setBorders (oRange as Object, color)
+  Dim aBorder As New com.sun.star.table.TableBorder
+  Dim aTopLine As New com.sun.star.table.BorderLine2
+  Dim aBottomLine As New com.sun.star.table.BorderLine2
+  Dim aLeftLine As New com.sun.star.table.BorderLine2
+  Dim aRightLine As New com.sun.star.table.BorderLine2
+  
+  aBorder = oRange.TableBorder
+  
+  aTopLine.OuterLineWidth = 150
+  aTopLine.InnerLineWidth = 0
+  aTopLine.Color = color
+
+  aBottomLine.OuterLineWidth = 150
+  aBottomLine.InnerLineWidth = 0
+  aBottomLine.Color = color
+  
+  aLeftLine.OuterLineWidth = 150
+  aLeftLine.InnerLineWidth = 0
+  aLeftLine.Color = color
+
+  aRightLine.OuterLineWidth = 150
+  aRightLine.InnerLineWidth = 0
+  aRightLine.Color = color
+
+  aBorder.IsTopLineValid = true
+  aBorder.IsBottomLineValid = true
+  aBorder.IsLeftLineValid = true
+  aBorder.IsRightLineValid = true
+
+  aBorder.TopLine = aTopLine
+  aBorder.BottomLine = aBottomLine
+  aBorder.LeftLine = aLeftLine
+  aBorder.RightLine = aRightLine
+  
+  oRange.TableBorder = aBorder
+End Sub
+
+
+</script:module>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Result" script:language="StarBasic">option explicit
+private ResultSheet
+&apos;//////////////////////////////////////////////////////////////////////////
+sub saveResult
+	dim i%, sheet, cell, c%,r%, cnt as long, sum as double
+	ResultSheet = ThisComponent.Sheets(isheetRESULT)
+	cell = ResultSheet.getCellRangeByName(&quot;$A$1&quot;)
+	r = cell.RangeAddress.StartRow
+	c = cell.RangeAddress.StartColumn
+	for i=0 To UBound(arCount)
+		cell = ResultSheet.getCellByPosition(c, r+i)
+		cell.Value = arPrice(i)
+		cell.CellBackColor = arColor(i)
+		dim toDark as double, toLight as double
+		toDark = getDifColor(cell.CellBackColor,  RGB(1, 1, 1))
+		toLight = getDifColor(cell.CellBackColor, RGB(255, 255, 255))
+		if toDark &gt; 0.7 * toLight then
+			cell.CharColor = 0	
+		else
+			cell.CharColor = RGB(255,255,255)
+		end if
+		cell = ResultSheet.getCellByPosition(c+1, r+i)
+		cell.Value = arCount(i)
+		cnt = cnt + arCount(i)
+
+		cell = ResultSheet.getCellByPosition(c+2, r+i)
+		cell.Value = arCount(i) * arPrice(i)
+		sum = sum + arCount(i) * arPrice(i)
+	next
+	cell = ResultSheet.getCellByPosition(c, r+i)
+	cell.CharWeight = 150
+	cell.Value = i
+
+	cell = ResultSheet.getCellByPosition(c+1, r+i)
+	cell.CharWeight = 150
+	cell.Value = cnt
+
+	cell = ResultSheet.getCellByPosition(c+2, r+i)
+	cell.CharWeight = 150
+	cell.Value = sum	
+end sub
+&apos;//////////////////////////////////////////////////////////////////////////
+
+</script:module>

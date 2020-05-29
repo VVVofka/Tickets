@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Sectors" script:language="StarBasic">Option Explicit
+&apos;Option Base 1
+public SectorsNames(1 To 11)  as String
+public const preSector = &quot;Sector&quot;
+&apos;/////////////////////////////////////////////////////////////////////////////
+Sub InitSectorsNames
+	dim n as integer
+	For n = 1 to 10
+		SectorsNames(n) = preSector + CStr(n)
+	next n
+	SectorsNames(n) =  preSector  + &quot;A&quot;
+End Sub
+&apos;//////////////////////////////////////////////////////////////////////////////
+public function IsSectorShort(byVal s$) as Boolean
+	IsSectorShort = True
+	s =  preSector + Trim(s)
+	dim n as integer
+	For n = LBound(SectorsNames) to UBound(SectorsNames) - 1
+		if SectorsNames(n) = s then exit function
+	next n
+	if s = (preSector + &quot;A&quot;) then
+		IsSectorShort = True
+	else
+		IsSectorShort = False
+	end if
+end function
+&apos;/////////////////////////////////////////////////////////////////////////////
+</script:module>

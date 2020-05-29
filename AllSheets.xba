@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="AllSheets" script:language="StarBasic">Option Explicit
+&apos;Option Base 1
+REM  C:/Program%20Files/LibreOffice/help/ru/text/sbasic/shared/01030300.html
+public const isheetPLAN = 0
+public const isheetMAKET = 1
+public const isheetREPORT = 2
+public const isheetRESULT = 3
+public const isheetCHECK = 4
+&apos;//////////////////////////////////////////////////////////////////////
+Sub Main
+	dim i%, sheets, s$
+	sheets = ThisComponent.Sheets
+	if sheets.Count &gt; 2 then
+		for i = sheets.Count-1 to 2 step -1
+			s = sheets(i).Name
+			sheets.removeByName(s)
+		next i
+	end if
+	sheets.copyByName(sheets(isheetMAKET).Name, &quot;ЛистЦен&quot;, isheetREPORT)
+	sheets.insertNewByName(&quot;Результат&quot;, isheetRESULT)
+	Dbg.dbgInit
+	SelectList (isheetREPORT)
+
+	InitSectorsNames
+
+	Saver.Init
+	
+	Parcing.parceHall()
+	
+	Saver.removeLastLine
+	Saver.saveSummary
+	Result.saveResult
+	SelectList (isheetRESULT)
+End Sub
+&apos; ////////////////////////////////////////////////////////////////
+sub SelectList (index%)
+	dim document   as object, dispatcher as object
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dim args1(0) as new com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Nr&quot;
+	args1(0).Value = index+1	&apos; № листа (отсчёт с 1)
+	dispatcher.executeDispatch(document, &quot;.uno:JumpToTable&quot;, &quot;&quot;, 0, args1())
+end sub
+&apos;//////////////////////////////////////////////////////////////////////////
+
+</script:module>
